@@ -33,6 +33,13 @@
         group: postgres
         owner: postgres
 
+    - name: change data_directory at PG Config
+      lineinfile:
+        path: "/etc/postgresql/{{ pg_version }}/main/postgresql.conf"
+        regexp: "/var/lib/postgresql/{{ pg_version }}/main/"
+        line: "{{ pg_data }}"
+      become: yes
+
     - name: enable and check PG status
       systemd:
         name: postgresql.service
@@ -89,3 +96,20 @@
         state: started
         enabled: yes
       become: yes
+
+#PLAY RECAP ***********************************************************************************************************************
+#51.250.8.131               : ok=5    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+#51.250.80.191              : ok=5    changed=0    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
+#51.250.85.15               : ok=5    changed=0    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
+
+
+#[ansible@vm2 ~]$ docker -v
+#Docker version 20.10.17, build 100c701
+#[ansible@vm2 ~]$ cat /etc/redhat-release
+#CentOS Stream release 8
+
+
+#ansible@vm1:~$ docker -v
+#Docker version 20.10.17, build 100c701
+#ansible@vm1:~$ cat /etc/issue
+#Ubuntu 20.04.4 LTS \n \l
