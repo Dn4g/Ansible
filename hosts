@@ -1,0 +1,12 @@
+[database]
+51.250.8.131 ansible_connection=local
+[database:vars]
+pg_version=13
+pg_data=/opt/postgresql/{{ pg_version }}/main
+
+[web]
+51.250.8.131 #VM0
+
+[app]
+51.250.80.191 #VM1
+51.250.85.15  #VM2

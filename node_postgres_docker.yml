@@ -1,0 +1,91 @@
+# install Postges
+---
+- hosts: database
+  gather_facts: no
+
+  tasks:
+    - name: add Postgres repo # можно также сделать через модуль apt_repository и apt_key
+      become: yes
+      shell: |
+        echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+
+    - name: install postgresql
+      become: yes
+      apt:
+        update_cache: yes
+        name: postgresql-{{ pg_version }} #поставим 13, актуальная версия -14
+        state: latest
+
+# перемещаем data_directory в другое место. Более изящных способов не нашел (:
+
+    - name: stop PG
+      service:
+        name: postgresql
+        state: stopped
+      become: yes
+
+    - name: move PG data_directory
+      copy:
+        src: "/var/lib/postgresql/{{ pg_version }}/main/"
+        dest: "{{ pg_data }}"
+        group: postgres
+        owner: postgres
+
+    - name: enable and check PG status
+      systemd:
+        name: postgresql.service
+        state: started
+        enabled: yes
+      become: yes
+
+
+- hosts: app
+  gather_facts: true # иначе Ансибл не поймет, Центос перед ним, или Убунту
+
+  tasks:
+    - name: Add Docker GPG apt key # добавляем ключ GPG для Дебиан.Убунту
+      apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+      become: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Add Docker GPG rpm key # Для Центос
+      rpm_key:
+        key: "https://download.docker.com/linux/centos/gpg"
+        state: present
+      when: ansible_os_family == "RedHat"
+      become: yes
+
+    - name: Add apt docker repo
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu focal stable"
+        state: present
+      when: ansible_os_family == "Debian"
+      become: yes
+
+    - name: add rpm docker repo
+      get_url:
+        url: "https://download.docker.com/linux/centos/docker-ce.repo"
+        dest: "/etc/yum.repos.d/docker.repo"
+      when: ansible_os_family == "RedHat"
+      become: yes
+
+    - name: install docker # помним, что ОС различные, поэтому берем модуль package
+      package:
+        name: "{{item}}"
+        state: latest
+      loop:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      become: yes
+
+    - name: enable and check Docker status
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes

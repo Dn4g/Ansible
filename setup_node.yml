@@ -1,0 +1,35 @@
+---
+- hosts:
+  - database
+  - web
+
+  gather_facts: no
+  remote_user: ansible
+
+  tasks:
+
+    - name: Import SSH-key # импорт закодированного ключа
+      copy:
+        src: "/Users/dn4g/SF_projects/Github/Ansible/id_vm.key"
+        dest: "/home/ansible/.ssh/"
+        owner: ansible
+        decrypt: yes
+
+    - name: install Ansible
+      apt:
+        update_cache: yes
+        name: ansible
+        state: latest
+      become: yes
+
+    - name: copy Ansible Inventory
+      copy:
+        src: "hosts"
+        dest: "/etc/ansible"
+      become: yes
+
+    - name: copy Ansible playbooks
+      copy:
+        src: "node_postgres_docker.yml"
+        dest: "/etc/ansible/playbooks/"
+      become: yes
